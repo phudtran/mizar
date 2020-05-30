@@ -1,0 +1,84 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mizar-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: mizar-operator
+    namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mizar-operator
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: mizar-daemon
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      job: mizar-daemon
+  template:
+    metadata:
+      labels:
+        job: mizar-daemon
+    spec:
+      hostPID: true
+      restartPolicy: Always
+      serviceAccountName: mizar-operator
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      volumes:
+        - name: mizar
+          hostPath:
+            path: /var
+            type: Directory
+      initContainers:
+        - image: phudtran/mizar:latest
+          name: node-init
+          command: [./node-init.sh]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: mizar
+              mountPath: /home
+      containers:
+        - image: phudtran/dropletd:latest
+          name: mizar-daemon
+          securityContext:
+            privileged: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mizar-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mizar-operator
+  template:
+    metadata:
+      labels:
+        app: mizar-operator
+        mizar: operator
+    spec:
+      serviceAccountName: mizar-operator
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+        - image: phudtran/endpointopr:latest
+          name: mizar-operator
+          securityContext:
+            privileged: true
