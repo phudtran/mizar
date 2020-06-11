@@ -33,20 +33,18 @@ class CniParams:
         self.command = os.environ.get("CNI_COMMAND")  # ADD | DEL | VERSION
         self.container_id = os.environ.get("CNI_CONTAINERID")
         self.netns = os.environ.get("CNI_NETNS")
-        self.container_pid = None
-        if (self.netns != ""):
-            self.container_pid = self.netns.split("/")[2]
         self.interface = os.environ.get("CNI_IFNAME")
         self.cni_path = os.environ.get("CNI_PATH")
         self.cni_args = os.environ.get("CNI_ARGS")
         self.cni_args_dict = {}
-
         argarray = [i.split('=') for i in self.cni_args.split(';')]
         for a in argarray:
-            self.cni_args_dict[a[0]] = a[1]
+            if a[0]:
+                self.cni_args_dict[a[0]] = a[1]
 
         # Load network configuration parameters
-        config_json = json.loads(stdin)
+        with open('/etc/cni/net.d/10-mizarcni.conf') as cni_config:
+            config_json = json.load(cni_config)
 
         # expected parameters in the CNI specification:
         self.cni_version = config_json["cniVersion"]
@@ -64,5 +62,4 @@ class CniParams:
             self.dns = config_json["dns"]
 
         self.k8sconfig = config_json["k8sconfig"]
-
         logger.info("read params")
