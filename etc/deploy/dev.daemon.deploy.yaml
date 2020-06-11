@@ -43,3 +43,6 @@ spec:
           name: mizar-daemon
           securityContext:
             privileged: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule

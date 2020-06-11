@@ -41,3 +41,6 @@ spec:
           name: mizar-operator
           securityContext:
             privileged: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
