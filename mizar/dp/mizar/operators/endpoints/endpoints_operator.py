@@ -56,6 +56,21 @@ class EndpointOperator(object):
 
         kube_list_obj(self.obj_api, RESOURCES.endpoints, list_endpoint_obj_fn)
 
+    def create_default_service(self, name="kubernetes", namespace="default"):
+        def create_default_sep(spec):
+            logger.info("Create default scaled endpoint")
+            ep = Endpoint(name, self.obj_api, self.store)
+            ep.set_vni(OBJ_DEFAULTS.default_vpc_vni)
+            ep.set_vpc(OBJ_DEFAULTS.default_ep_vpc)
+            ep.set_net(OBJ_DEFAULTS.default_ep_net)
+            ep.set_ip(spec.cluster_ip)
+            ep.set_mac(self.rand_mac())
+            ep.set_type(OBJ_DEFAULTS.ep_type_scaled)
+            ep.set_status(OBJ_STATUS.ep_status_init)
+            ep.create_obj()
+        kube_get_service_spec(self.core_api, name,
+                              namespace, create_default_sep)
+
     def get_endpoint_tmp_obj(self, name, spec):
         return Endpoint(name, self.obj_api, None, spec)
 
@@ -88,7 +103,8 @@ class EndpointOperator(object):
     def update_endpoints_with_bouncers(self, bouncer):
         eps = self.store.get_eps_in_net(bouncer.net).values()
         for ep in eps:
-            ep.update_bouncers(set([bouncer]))
+            if ep.type == OBJ_DEFAULTS.ep_type_simple:
+                ep.update_bouncers({"bouncer.name": bouncer})
 
     def create_scaled_endpoint(self, name, spec):
         logger.info("Create scaled endpoint {} spec {}".format(name, spec))

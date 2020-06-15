@@ -39,12 +39,14 @@ class CniParams:
         self.cni_args_dict = {}
         argarray = [i.split('=') for i in self.cni_args.split(';')]
         for a in argarray:
-            if a[0]:
+            if a[1]:
                 self.cni_args_dict[a[0]] = a[1]
 
         # Load network configuration parameters
-        with open('/etc/cni/net.d/10-mizarcni.conf') as cni_config:
-            config_json = json.load(cni_config)
+        config_json = json.loads(stdin)
+        if not config_json["name"]:
+            with open('/etc/cni/net.d/10-mizarcni.conf') as cni_config:
+                config_json = json.load(cni_config)
 
         # expected parameters in the CNI specification:
         self.cni_version = config_json["cniVersion"]

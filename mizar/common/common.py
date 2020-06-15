@@ -62,7 +62,7 @@ def host_nsenter(pid=1):
     _host_nsenter('ipc', pid)
     _host_nsenter('net', pid)
     _host_nsenter('pid', pid)
-    #_host_nsenter('user', pid)
+    # _host_nsenter('user', pid)
     _host_nsenter('uts', pid)
 
 
@@ -205,6 +205,18 @@ def kube_list_obj(obj_api, plurals, list_callback):
         name = v['metadata']['name']
         spec = v['spec']
         list_callback(name, spec, plurals)
+
+
+def kube_get_service_spec(core_api, service_name, service_namespace, get_callback):
+    logger.info("==get_service==")
+    response = core_api.read_namespaced_service(
+        name=service_name,
+        namespace=service_namespace
+    )
+    logger.info(response)
+    logger.info(response.spec)
+    logger.info(response.spec.cluster_ip)
+    get_callback(response.spec)
 
 
 def get_spec_val(key, spec, default=""):
