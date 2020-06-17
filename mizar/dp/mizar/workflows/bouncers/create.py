@@ -68,6 +68,8 @@ class BouncerCreate(WorkflowTask):
         if net:
             net.bouncers[bouncer.name] = bouncer
             dividers_opr.update_divider_with_bouncers(bouncer, net)
+            # bouncer.update_gw_ep(endpoints_opr.create_gw_ep(
+            #    net.name + "_gw", net.gw))
         bouncer.load_transit_xdp_pipeline_stage()
         bouncers_opr.set_bouncer_provisioned(bouncer)
         bouncers_opr.store.update_bouncer(bouncer)

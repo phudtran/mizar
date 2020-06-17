@@ -26,6 +26,7 @@ from mizar.common.rpc import TrnRpc
 from mizar.common.constants import *
 from mizar.common.common import *
 from mizar.obj.bouncer import Bouncer
+from mizar.obj.endpoint import Endpoint
 from mizar.common.cidr import Cidr
 from kubernetes.client.rest import ApiException
 
