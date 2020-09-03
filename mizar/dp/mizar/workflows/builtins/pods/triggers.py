@@ -26,10 +26,24 @@ from mizar.common.common import *
 from mizar.common.constants import *
 from mizar.common.wf_factory import *
 from mizar.common.wf_param import *
+from mizar.proto.builtins_pb2 import *  # Testing: Remove
+from mizar.arktos.arktos_service import ArktosServiceClient  # Testing: Remove
+from mizar.dp.mizar.operators.droplets.droplets_operator import *  # Testing: Remove
 
 logger = logging.getLogger()
 
 
+# @kopf.on.resume('', 'v1', 'pods', retries=OBJ_DEFAULTS.kopf_max_retries)
+# @kopf.on.update('', 'v1', 'pods', retries=OBJ_DEFAULTS.kopf_max_retries)
+# @kopf.on.create('', 'v1', 'pods', retries=OBJ_DEFAULTS.kopf_max_retries)
+# async def builtins_on_pod(body, spec, **kwargs):
+#     param = HandlerParam()
+#     param.name = kwargs['name']
+#     param.body = body
+#     param.spec = spec
+#     run_workflow(wffactory().k8sPodCreate(param=param))
+
+# Testing: Remove
 @kopf.on.resume('', 'v1', 'pods', retries=OBJ_DEFAULTS.kopf_max_retries)
 @kopf.on.update('', 'v1', 'pods', retries=OBJ_DEFAULTS.kopf_max_retries)
 @kopf.on.create('', 'v1', 'pods', retries=OBJ_DEFAULTS.kopf_max_retries)
@@ -38,4 +52,17 @@ async def builtins_on_pod(body, spec, **kwargs):
     param.name = kwargs['name']
     param.body = body
     param.spec = spec
-    run_workflow(wffactory().k8sPodCreate(param=param))
+    if "hostIP" not in param.body['status']:
+        raise kopf.TemporaryError("TEMP", 5)
+    client = ArktosServiceClient("localhost")
+    m = BuiltinsPodMessage(
+        name=param.body['metadata']['name'],
+        namespace=param.body['metadata']['namespace'],
+        phase=param.body['status']['phase'],
+        host_ip=param.body['status']['hostIP']
+    )
+
+    rc = client.CreatePod(m)
+    if rc.code != CodeType.OK:
+        logger.info("Arktos ERROR {}".format(rc.message))
+        raise kopf.TemporaryError("TEMP", 5)

@@ -1,3 +1,23 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 The Authors.
+
+# Authors: Phu Tran          <@phudtran>
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:The above copyright
+# notice and this permission notice shall be included in all copies or
+# substantial portions of the Software.THE SOFTWARE IS PROVIDED "AS IS",
+# WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+# TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+# FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+# THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 import logging
 import sys
 import os
@@ -20,7 +40,9 @@ from mizar.dp.mizar.operators.droplets.droplets_operator import *
 from mizar.dp.mizar.operators.bouncers.bouncers_operator import *
 from mizar.dp.mizar.operators.endpoints.endpoints_operator import *
 from mizar.dp.mizar.operators.vpcs.vpcs_operator import *
-from google.protobuf import empty_pb2
+from mizar.proto.builtins_pb2 import *
+from mizar.common.wf_param import *
+from mizar.common.wf_factory import wffactory
 
 droplet_opr = DropletOperator()
 bouncer_opr = BouncerOperator()
@@ -38,60 +60,41 @@ class ArktosService(ArktosNetworkServiceServicer, BuiltinsServiceServicer):
 
     def CreatePod(self, request, context):
         logger.info("Creating pod from Arktos Service {}".format(request.name))
-        spec = {
-            'hostIP': request.host_ip,
-            'name': request.name,
-            'namespace': request.namespace,
-            'tenant': '',
-            'vpc': OBJ_DEFAULTS.default_ep_vpc,
-            'net': OBJ_DEFAULTS.default_ep_net,
-            'phase': request.phase,
-            'interfaces': [{'name': 'eth0'}]
-        }
+        param = HandlerParam()
+        param.name = request.name
+        param.body['status'] = {}
+        param.body['metadata'] = {}
 
-        logger.info("Pod spec {}".format(spec))
-        spec['vni'] = vpc_opr.store_get(spec['vpc']).vni
-        spec['droplet'] = droplet_opr.store_get_by_ip(spec['hostIP'])
-        if not spec['droplet']:
-            logger.error("Droplet not yet created.")
-            return empty_pb2.Empty()
-        if request.phase != 'Pending':
-            return empty_pb2.Empty()
-        interfaces = endpoint_opr.init_simple_endpoint_interfaces(
-            spec['hostIP'], spec)
-        endpoint_opr.create_simple_endpoints(interfaces, spec)
-        return empty_pb2.Empty()
+        param.body['status']['hostIP'] = request.host_ip
+        param.body['metadata']['name'] = request.name
+        param.body['metadata']['namespace'] = request.namespace
+        param.body['status']['phase'] = request.phase
+        return run_arktos_workflow(wffactory().k8sPodCreate(param=param))
 
     def CreateNode(self, request, context):
         logger.info(
             "Creating droplet from Arktos Service {}".format(request.ip))
-        droplet_opr.create_droplet(request.ip)
-        return empty_pb2.Empty()
+        param = HandlerParam()
+        param.body['status'] = {}
+        param.body['status']['addresses'] = list()
+        param.body['status']['addresses'].append({})
+
+        param.body['status']['addresses'][0]["type"] = "InternalIP"
+        param.body['status']['addresses'][0]["address"] = request.ip
+        return run_arktos_workflow(wffactory().k8sDropletCreate(param=param))
 
     def CreateService(self, request, context):
-        logger.info("Create scaled endpoint {}.".format(request.name))
-        ep = Endpoint(request.name, endpoint_opr.obj_api, endpoint_opr.store)
-        ip = request.ip
-        ep.set_vni(OBJ_DEFAULTS.default_vpc_vni)
-        ep.set_vpc(OBJ_DEFAULTS.default_ep_vpc)
-        ep.set_net(OBJ_DEFAULTS.default_ep_net)
-        if ip != "":
-            ep.set_ip(ip)
-        ep.set_mac(endpoint_opr.rand_mac())
-        ep.set_type(OBJ_DEFAULTS.ep_type_scaled)
-        ep.set_status(OBJ_STATUS.ep_status_init)
-        ep.create_obj()
-        return empty_pb2.Empty()
+        logger.info(
+            "Create scaled endpoint from Network Controller {}.".format(request.name))
+        param = HandlerParam()
+        param.name = request.name
+        param.body['status'] = {}
+        param.body['metadata'] = {}
 
     def CreateServiceEndpoint(self, request, context):
-        ep = self.__update_scaled_endpoint_backend(
-            request.name, request.namespace, request.ports, request.backends)
-        if ep:
-            if not bouncer_opr.store.get_bouncers_of_net(ep.net):
-                logger.error("Bouncers not yet ready")
-            else:
-                bouncer_opr.update_endpoint_with_bouncers(ep)
-        return empty_pb2.Empty()
+        logger.info("Create Service Endpoint from Network Controller")
+        param = HandlerParam()
+        param.name = request.name
 
     def ResumePod(self, request, context):
         self.CreatePod(request, context)

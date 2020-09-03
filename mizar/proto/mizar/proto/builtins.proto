@@ -44,13 +44,10 @@ message BuiltinsPodMessage {
 message BuiltinsServiceMessage {
   string arktos_network = 1;
   string name = 2;
-  string ip = 3;
-  enum CodeType{
-    OK = 0;
-    TEMP_ERROR = 1;
-    PERM_ERROR = 2;
-  }
-  CodeType code = 4;
+  string namespace = 3;
+  string tenant = 4;
+  string ip = 5;
+  ReturnCode return_code = 6;
 }
 
 message BuiltinsServiceEndpointMessage {
@@ -77,10 +74,12 @@ message InterfacesMessage {
 }
 
 message ReturnCode {
-  enum CodeType{
+  CodeType code = 1;
+  string message = 2;
+}
+
+enum CodeType{
     OK = 0;
     TEMP_ERROR = 1;
     PERM_ERROR = 2;
-  }
-  CodeType code = 1;
 }

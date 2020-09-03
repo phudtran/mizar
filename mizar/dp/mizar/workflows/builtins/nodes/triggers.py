@@ -26,10 +26,22 @@ from mizar.common.common import *
 from mizar.common.constants import *
 from mizar.common.wf_factory import *
 from mizar.common.wf_param import *
-
+from mizar.proto.builtins_pb2 import *  # Testing: Remove
+from mizar.arktos.arktos_service import ArktosServiceClient  # Testing: Remove
 logger = logging.getLogger()
 
 
+# @kopf.on.resume('', 'v1', 'nodes', retries=OBJ_DEFAULTS.kopf_max_retries)
+# @kopf.on.update('', 'v1', 'nodes', retries=OBJ_DEFAULTS.kopf_max_retries)
+# @kopf.on.create('', 'v1', 'nodes', retries=OBJ_DEFAULTS.kopf_max_retries)
+# async def droplet_opr_on_node(body, spec, **kwargs):
+#     param = HandlerParam()
+#     param.name = kwargs['name']
+#     param.body = body
+#     param.spec = spec
+#     run_workflow(wffactory().k8sDropletCreate(param=param))
+
+# Testing: remove
 @kopf.on.resume('', 'v1', 'nodes', retries=OBJ_DEFAULTS.kopf_max_retries)
 @kopf.on.update('', 'v1', 'nodes', retries=OBJ_DEFAULTS.kopf_max_retries)
 @kopf.on.create('', 'v1', 'nodes', retries=OBJ_DEFAULTS.kopf_max_retries)
@@ -38,4 +50,12 @@ async def droplet_opr_on_node(body, spec, **kwargs):
     param.name = kwargs['name']
     param.body = body
     param.spec = spec
-    run_workflow(wffactory().k8sDropletCreate(param=param))
+    client = ArktosServiceClient("localhost")
+    for addr in param.body['status']['addresses']:
+        if addr['type'] != 'InternalIP':
+            continue
+        ip = addr['address']
+        m = BuiltinsNodeMessage(
+            ip=ip
+        )
+        client.CreateNode(m)
