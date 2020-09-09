@@ -19,18 +19,21 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
 # THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from mizar.common.constants import *
 import logging
 import json
 from mizar.common.workflow import *
 from mizar.dp.mizar.operators.droplets.droplets_operator import *
 from mizar.dp.mizar.operators.endpoints.endpoints_operator import *
 from mizar.dp.mizar.operators.vpcs.vpcs_operator import *
-from mizar.common.constants import *
+from mizar.dp.mizar.operators.nets.nets_operator import *
+
 
 logger = logging.getLogger()
 
 droplet_opr = DropletOperator()
 endpoint_opr = EndpointOperator()
+nets_opr = NetOperator()
 vpc_opr = VpcOperator()
 
 
@@ -54,6 +57,7 @@ class k8sPodCreate(WorkflowTask):
             'vpc': self.param.body['metadata'].get('labels', {}).get(
                 OBJ_DEFAULTS.arktos_pod_annotation, OBJ_DEFAULTS.default_ep_vpc),
             'net': OBJ_DEFAULTS.default_ep_net,
+            'net_prefix': OBJ_DEFAULTS.default_net_prefix,
             'phase': self.param.body['status']['phase'],
             'interfaces': [{'name': 'eth0'}]
         }
