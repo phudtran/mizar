@@ -64,6 +64,7 @@ class k8sPodCreate(WorkflowTask):
 
         logger.info("Pod spec {}".format(spec))
         spec['vni'] = vpc_opr.store_get(spec['vpc']).vni
+        logger.info("HostIP IS {}".format(spec['hostIP']))
         spec['droplet'] = droplet_opr.store_get_by_ip(spec['hostIP'])
 
         if OBJ_DEFAULTS.arktos_pod_label in self.param.body['metadata'].get('labels', {}):

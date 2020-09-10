@@ -29,11 +29,6 @@ function deploy_steps:binaries_ready {
 
 function deploy_steps:environment_ready {
     common:check_cluster_ready; local is_cluster_ready=$?
-
-    if [[ $is_cluster_ready == 0 ]]; then
-        echo "[deploy_steps] Error: Cluster is not ready. Cannot deploy Mizar when cluster is not ready. Please make cluster up and running." 1>&2
-        exit 1
-    fi
 }
 
 function deploy_steps:deploy_mizar {
