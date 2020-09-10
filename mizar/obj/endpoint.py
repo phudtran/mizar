@@ -60,6 +60,7 @@ class Endpoint:
         self.provisiondelay = ""
         self.bouncers = {}
         self.backends = []
+        self.ports = []
         if spec is not None:
             self.set_obj_spec(spec)
         self.deleted = False
@@ -70,6 +71,8 @@ class Endpoint:
         return TrnRpc(self.droplet_ip, self.droplet_mac)
 
     def get_nip(self):
+        if self.type == OBJ_DEFAULTS.ep_type_host:
+            return OBJ_DEFAULTS.default_net_ip
         ip = ipaddress.ip_interface(self.ip + '/' + self.prefix)
         return str(ip.network.network_address)
 
@@ -154,9 +157,11 @@ class Endpoint:
         self.store.delete_ep(self.name)
 
     # K8s APIs
+    # This function does a store update
     def create_obj(self):
         return kube_create_obj(self)
 
+    # This function does a store update
     def update_obj(self):
         return kube_update_obj(self)
 
@@ -254,6 +259,9 @@ class Endpoint:
     def set_backends(self, backends):
         self.backends = backends
 
+    def set_ports(self, ports):
+        self.ports = ports
+
     def get_veth_peer(self):
         return self.veth_peer
 
@@ -286,6 +294,15 @@ class Endpoint:
         if self.type == OBJ_DEFAULTS.ep_type_scaled or self.type == OBJ_DEFAULTS.ep_type_gateway:
             remote_ips = list(self.backends)
         return remote_ips
+
+    def get_remote_ports(self):
+        return [str(port[1][0]) for port in self.ports]
+
+    def get_frontend_ports(self):
+        return [str(port[0]) for port in self.ports]
+
+    def get_port_protocols(self):
+        return [port[1][1] for port in self.ports]
 
     def get_remote_macs(self):
         remote_macs = [self.droplet_mac]

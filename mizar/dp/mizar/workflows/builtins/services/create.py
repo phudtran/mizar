@@ -40,6 +40,7 @@ class k8sServiceCreate(WorkflowTask):
         logger.info("Run {task}".format(task=self.__class__.__name__))
         endpoints_opr.create_scaled_endpoint(
             self.param.name, self.param.spec, self.param.body['metadata']['namespace'])
+        self.param.extra = self.param.spec["clusterIP"]
         self.finalize()
 
 
@@ -51,10 +52,16 @@ class k8sEndpointsUpdate(WorkflowTask):
 
     def run(self):
         logger.info("Run {task}".format(task=self.__class__.__name__))
-        if 'subsets' not in self.param.body:
+        if 'subsets' not in self.param.body and not self.param.extra:
             return
-        ep = endpoints_opr.update_scaled_endpoint_backend(
-            self.param.name, self.param.body['subsets'])
+        namespace = self.param.body["metadata"]["namespace"]
+        if self.param.extra:
+            endpoints_opr.update_scaled_endpoint_backend_service(
+                self.param.extra.name, namespace, self.param.extra.ports, self.param.extra.backend_ip)
+            self.param.extra = None
+        else:
+            ep = endpoints_opr.update_scaled_endpoint_backend(
+                self.param.name, namespace, self.param.body['subsets'])
         if ep:
             if not bouncers_opr.store.get_bouncers_of_net(ep.net):
                 self.raise_temporary_error(

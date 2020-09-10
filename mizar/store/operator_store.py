@@ -20,6 +20,7 @@
 # THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import logging
+import inspect
 
 logger = logging.getLogger()
 
@@ -43,6 +44,7 @@ class OprStore(object):
 
         self.eps_store = {}
         self.eps_net_store = {}
+        self.eps_pod_store = {}
 
         self.dividers_store = {}
         self.dividers_vpc_store = {}
@@ -112,6 +114,8 @@ class OprStore(object):
             logger.info("Net: {}, Spec: {}".format(n.name, n.get_obj_spec()))
 
     def update_ep(self, ep):
+        logger.info("Store update ep {}".format(ep.name))
+        # logger.info('caller name:{}'.format(inspect.stack()[1][3]))
         self.eps_store[ep.name] = ep
         if ep.net not in self.eps_net_store:
             self.eps_net_store[ep.net] = {}
@@ -138,6 +142,11 @@ class OprStore(object):
     def get_eps_in_net(self, net):
         if net in self.eps_net_store:
             return self.eps_net_store[net]
+        return {}
+
+    def get_eps_in_pod(self, pod):
+        if pod in self.eps_pod_store:
+            return self.eps_pod_store[pod]
         return {}
 
     def contains_ep(self, name):
