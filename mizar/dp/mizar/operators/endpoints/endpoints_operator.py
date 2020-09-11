@@ -289,7 +289,7 @@ class EndpointOperator(object):
             CIDR range as vpc,
             OR arktos needs check wheter the ip and subnet is valid
             """
-            ep.set_net(net_info.get('subnet', spec['net']))
+            ep.set_net(net_info.get('subnet', spec['subnet']))
             ep.set_prefix(net_info.get('prefix', spec['net_prefix']))
             ep.set_ip(net_info.get('ip', ''))
 

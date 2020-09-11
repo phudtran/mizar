@@ -102,7 +102,7 @@ class OBJ_DEFAULTS:
 
 class RESOURCES:
     endpoints = "endpoints"
-    nets = "nets"
+    nets = "subnets"
     vpcs = "vpcs"
     droplets = "droplets"
     bouncers = "bouncers"
@@ -111,7 +111,8 @@ class RESOURCES:
 
 class COMPUTE_PROVIDER:
     k8s = True
-    kubernetes = "k8s"
+    kubernetes = "kubernetes"
+    k8s = True
     arktos = "arktos"
 
 
