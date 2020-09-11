@@ -117,6 +117,7 @@ class NetOperator(object):
             else:
                 ip = n.allocate_ip()
             ep.set_ip(ip)
+
         gw = n.get_gw_ip()
         if ep.get_prefix() == "":
             ep.set_prefix(n.get_prefixlen())

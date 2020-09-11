@@ -20,14 +20,20 @@
 # THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import logging
+from kubernetes import client
 from mizar.common.workflow import *
+from mizar.common.common import kube_patch_service
 from mizar.dp.mizar.operators.bouncers.bouncers_operator import *
 from mizar.dp.mizar.operators.endpoints.endpoints_operator import *
 from mizar.dp.mizar.operators.nets.nets_operator import *
+from mizar.dp.mizar.operators.vpcs.vpcs_operator import *
+
 logger = logging.getLogger()
 
 endpoints_opr = EndpointOperator()
 bouncers_opr = BouncerOperator()
+nets_opr = NetOperator()
+vpcs_opr = VpcOperator()
 
 
 class k8sServiceCreate(WorkflowTask):
@@ -38,9 +44,20 @@ class k8sServiceCreate(WorkflowTask):
 
     def run(self):
         logger.info("Run {task}".format(task=self.__class__.__name__))
-        endpoints_opr.create_scaled_endpoint(
-            self.param.name, self.param.spec, self.param.body['metadata']['namespace'])
-        self.param.extra = self.param.spec["clusterIP"]
+        net = nets_opr.store.get_net(OBJ_DEFAULTS.default_ep_net)
+        logger.info("NET OBJECT {}".format(net))
+        if self.param.extra:
+            arktosnet = self.param.extra['arktos_network']
+            vpc = vpcs_opr.store.get_vpc_in_arktosnet(arktosnet)
+            nets = nets_opr.store.get_nets_in_vpc(vpc)
+            if nets:
+                net = next(iter(nets.values()))
+        if not net:
+            self.raise_temporary_error(
+                "Task: {} Default net: {} Not yet created.".format(self.__class__.__name__, net.name))
+        ep = endpoints_opr.create_scaled_endpoint(
+            self.param.name, self.param.spec, net, self.param.body['metadata']['namespace'])
+        self.param.return_message = ep.ip
         self.finalize()
 
 
@@ -55,6 +72,10 @@ class k8sEndpointsUpdate(WorkflowTask):
         if 'subsets' not in self.param.body and not self.param.extra:
             return
         namespace = self.param.body["metadata"]["namespace"]
+        ep = endpoints_opr.store.get_ep(self.param.name)
+        if not ep:
+            self.raise_temporary_error(
+                "Task: {} Endpoint: {} Not yet created.".format(self.__class__.__name__, ep.name))
         if self.param.extra:
             endpoints_opr.update_scaled_endpoint_backend_service(
                 self.param.extra.name, namespace, self.param.extra.ports, self.param.extra.backend_ip)

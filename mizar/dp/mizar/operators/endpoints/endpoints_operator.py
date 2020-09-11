@@ -89,7 +89,7 @@ class EndpointOperator(object):
         self.store.update_ep(ep)
 
     def update_bouncer_with_endpoints(self, bouncer):
-        eps = self.store.get_eps_in_net(bouncer.net).values()
+        eps = list(self.store.get_eps_in_net(bouncer.net).values())
         bouncer.update_eps(eps)
 
     def update_endpoints_with_bouncers(self, bouncer):
@@ -100,21 +100,27 @@ class EndpointOperator(object):
             if ep.type == OBJ_DEFAULTS.ep_type_simple or ep.type == OBJ_DEFAULTS.ep_type_host:
                 ep.update_bouncers({bouncer.name: bouncer})
 
-    def create_scaled_endpoint(self, name, spec, namespace="default"):
+    def create_scaled_endpoint(self, name, spec, net, namespace="default"):
         logger.info("Create scaled endpoint {} spec {}".format(name, spec))
         ep = Endpoint(name, self.obj_api, self.store)
-        ip = spec['clusterIP']
+        ip = ''
+        if spec['clusterIP'] != "":
+            ip = spec['clusterIP']
+        else:
+            ip = net.allocate_ip()
+        net.mark_ip_as_allocated(ip)
         # If not provided in Pod, use defaults
         # TODO: have it pod :)
-        ep.set_vni(OBJ_DEFAULTS.default_vpc_vni)
-        ep.set_vpc(OBJ_DEFAULTS.default_ep_vpc)
-        ep.set_net(OBJ_DEFAULTS.default_ep_net)
+        ep.set_vni(net.vni)
+        ep.set_vpc(net.vpc)
+        ep.set_net(net.name)
         ep.set_ip(ip)
         ep.set_mac(self.rand_mac())
         ep.set_type(OBJ_DEFAULTS.ep_type_scaled)
         ep.set_status(OBJ_STATUS.ep_status_init)
         ep.create_obj()
         self.annotate_builtin_endpoints(name, namespace)
+        return ep
 
     def create_gw_endpoint(self, name, ip, vni, vpc, net):
         logger.info("Create gw endpoint")
@@ -290,7 +296,6 @@ class EndpointOperator(object):
             OR arktos needs check wheter the ip and subnet is valid
             """
             ep.set_net(net_info.get('subnet', spec['subnet']))
-            ep.set_prefix(net_info.get('prefix', spec['net_prefix']))
             ep.set_ip(net_info.get('ip', ''))
 
             ep.set_mac(interface.address.mac)

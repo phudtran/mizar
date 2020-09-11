@@ -23,8 +23,8 @@ import logging
 from mizar.common.workflow import *
 from mizar.dp.mizar.operators.vpcs.vpcs_operator import *
 from mizar.dp.mizar.operators.droplets.droplets_operator import *
-logger = logging.getLogger()
 
+logger = logging.getLogger()
 vpcs_opr = VpcOperator()
 droplets_opr = DropletOperator()
 

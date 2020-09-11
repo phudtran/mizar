@@ -19,21 +19,18 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
 # THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from mizar.common.constants import *
 import logging
 import json
 from mizar.common.workflow import *
 from mizar.dp.mizar.operators.droplets.droplets_operator import *
 from mizar.dp.mizar.operators.endpoints.endpoints_operator import *
 from mizar.dp.mizar.operators.vpcs.vpcs_operator import *
-from mizar.dp.mizar.operators.nets.nets_operator import *
-
+from mizar.common.constants import *
 
 logger = logging.getLogger()
 
 droplet_opr = DropletOperator()
 endpoint_opr = EndpointOperator()
-nets_opr = NetOperator()
 vpc_opr = VpcOperator()
 
 
@@ -54,29 +51,28 @@ class k8sPodCreate(WorkflowTask):
             'type': COMPUTE_PROVIDER.kubernetes,
             'namespace': self.param.body['metadata'].get('namespace', 'default'),
             'tenant': self.param.body['metadata'].get('tenant', ''),
-            'vpc': self.param.body['metadata'].get('labels', {}).get(
-                OBJ_DEFAULTS.arktos_pod_annotation, OBJ_DEFAULTS.default_ep_vpc),
+            'vpc': OBJ_DEFAULTS.default_ep_vpc,
             'subnet': OBJ_DEFAULTS.default_ep_net,
-            'net_prefix': OBJ_DEFAULTS.default_net_prefix,
             'phase': self.param.body['status']['phase'],
             'interfaces': [{'name': 'eth0'}]
         }
-
         logger.info("Pod spec {}".format(spec))
+
         spec['vni'] = vpc_opr.store_get(spec['vpc']).vni
-        logger.info("HostIP IS {}".format(spec['hostIP']))
         spec['droplet'] = droplet_opr.store_get_by_ip(spec['hostIP'])
 
-        if OBJ_DEFAULTS.arktos_pod_label in self.param.body['metadata'].get('labels', {}):
+        if self.param.extra:
             spec['type'] = COMPUTE_PROVIDER.arktos
-
-        # Example: arktos.futurewei.com/nic: [{"name": "eth0", "ip": "10.10.1.12", "subnet": "net1"}]
-        # all three fields are optional. Each item in the list corresponding to an endpoint
-        # which represents a network interface for a pod
-        if OBJ_DEFAULTS.arktos_pod_annotation in self.param.body['metadata'].get('annotations', {}):
-            net_config = self.param.body['metadata']['annotations'][OBJ_DEFAULTS.arktos_pod_annotation]
-            configs = json.loads(net_config)
-            spec['interfaces'] = configs
+            if "arktos_network" in self.param.extra:
+                spec['vpc'] = vpc_opr.store.get_vpc_in_arktosnet(
+                    self.param.extra["arktos_network"])
+            # Example: arktos.futurewei.com/nic: [{"name": "eth0", "ip": "10.10.1.12", "subnet": "net1"}]
+            # all three fields are optional. Each item in the list corresponding to an endpoint
+            # which represents a network interface for a pod
+            if "interfaces" in self.param.extra:
+                net_config = self.param.extra["interfaces"]
+                configs = json.loads(net_config)
+                spec['interfaces'] = configs
 
         # make sure not to trigger init or create simple endpoint
         # if Arktos network is already marked ready (Needs to confirm with Arktos team)

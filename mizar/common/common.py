@@ -241,6 +241,21 @@ def kube_get_service(core_api, service_name, service_namespace):
         return response
 
 
+def kube_patch_service(core_api, service_name, service_body, service_namespace='default'):
+    response = None
+    try:
+        response = core_api.patch_namespaced_service(
+            name=service_name,
+            namespace=service_namespace,
+            body=service_body)
+        return response
+    except:
+        logger.debug("Failed to update service {} in namespace {}".format(
+            service_name, service_namespace))
+    finally:
+        return response
+
+
 def kube_create_config_map(core_api, namespace, configmap):
     try:
         response = core_api.create_namespaced_config_map(
@@ -282,9 +297,9 @@ def run_workflow(task):
 
 def run_arktos_workflow(task):
     results = luigi.build([task], detailed_summary=True)
-    if task.param.extra:
+    if task.param.return_message:
         code = CodeType.OK
-        return_message = task.param.extra
+        return_message = task.param.return_message
     else:
         code = CodeType.OK
         return_message = "OK"
