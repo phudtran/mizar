@@ -74,14 +74,18 @@ class ArktosService(BuiltinsServiceServicer):
         param = HandlerParam()
         param.name = request.name
         param.body['metadata'] = {}
+        param.extra = {}
 
         param.body['metadata']['namespace'] = request.namespace
         param.spec["clusterIP"] = request.ip
+        logger.info("From grpc server: Service IP is {}".format(request.ip))
         param.extra["arktos_network"] = request.arktos_network
+        param.extra["tenant"] = request.tenant
         return run_arktos_workflow(wffactory().k8sServiceCreate(param=param))
 
     def CreateServiceEndpoint(self, request, context):
-        logger.info("Create Service Endpoint from Network Controller")
+        logger.info(
+            "Create Service Endpoint from Network Controller {}".format(request.name))
         param = HandlerParam()
         param.name = request.name
         param.body['metadata'] = {}
@@ -90,6 +94,8 @@ class ArktosService(BuiltinsServiceServicer):
         return run_arktos_workflow(wffactory().k8sEndpointsUpdate(param=param))
 
     def CreateArktosNetwork(self, request, context):
+        logger.info(
+            "Arktos Network create from Network Controller {} -> {}.".format(request.name, request.vpc))
         rc = ReturnCode(
             code=CodeType.OK,
             message="OK"
@@ -133,18 +139,22 @@ class ArktosService(BuiltinsServiceServicer):
         return self.CreateServiceEndpoint(request, context)
 
     def DeleteNode(self, request, context):
-        rc = ReturnCode(
-            code=CodeType.OK,
-            message="OK"
-        )
-        return rc
+        logger.info(
+            "Deleting droplet from Network Controller {}".format(request.name))
+        param = HandlerParam()
+        param.name = request.name
+        return run_arktos_workflow(wffactory().DropletDelete(param=param))
 
     def DeletePod(self, request, context):
+        logger.info(
+            "Deleting pod from Network Controller {}".format(request.name))
         param = HandlerParam()
         param.name = request.name
         return run_arktos_workflow(wffactory().k8sPodDelete(param=param))
 
     def DeleteService(self, request, context):
+        logger.info(
+            "Deleting servoce from Network Controller {}".format(request.name))
         param = HandlerParam()
         param.name = request.name
         return run_arktos_workflow(wffactory().k8sServiceDelete(param=param))
