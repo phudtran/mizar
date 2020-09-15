@@ -33,15 +33,15 @@ annotations_filter = {OBJ_DEFAULTS.mizar_service_annotation_key:
                       OBJ_DEFAULTS.mizar_service_annotation_val}
 
 
-# @kopf.on.resume('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
-# @kopf.on.update('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
-# @kopf.on.create('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
-# async def services_opr_on_services(body, spec, **kwargs):
-#     param = HandlerParam()
-#     param.name = kwargs['name']
-#     param.body = body
-#     param.spec = spec
-#     run_workflow(wffactory().k8sServiceCreate(param=param))
+@kopf.on.resume('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
+@kopf.on.update('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
+@kopf.on.create('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
+async def services_opr_on_services(body, spec, **kwargs):
+    param = HandlerParam()
+    param.name = kwargs['name']
+    param.body = body
+    param.spec = spec
+    run_workflow(wffactory().k8sServiceCreate(param=param))
 
 
 # @kopf.on.resume('', 'v1', 'endpoints', annotations=annotations_filter, retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
@@ -55,10 +55,10 @@ annotations_filter = {OBJ_DEFAULTS.mizar_service_annotation_key:
 #     run_workflow(wffactory().k8sEndpointsUpdate(param=param))
 
 
-# @kopf.on.delete('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
-# async def services_opr_on_services_delete(body, spec, **kwargs):
-#     param = HandlerParam()
-#     param.name = kwargs['name']
-#     param.body = body
-#     param.spec = spec
-#     run_workflow(wffactory().k8sServiceDelete(param=param))
+@kopf.on.delete('', 'v1', 'services', retries=OBJ_DEFAULTS.kopf_max_retries, when=LAMBDAS.k8s_provider_vanilla)
+async def services_opr_on_services_delete(body, spec, **kwargs):
+    param = HandlerParam()
+    param.name = kwargs['name']
+    param.body = body
+    param.spec = spec
+    run_workflow(wffactory().k8sServiceDelete(param=param))
