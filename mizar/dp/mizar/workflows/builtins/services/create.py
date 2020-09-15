@@ -77,6 +77,12 @@ class k8sEndpointsUpdate(WorkflowTask):
         name = self.param.name + "-{}".format(namespace)
         if self.param.extra:
             name = name + "-{}".format(self.param.extra.tenant)
+        ep = endpoints_opr.store.get_ep(name)
+        if not ep:
+            self.raise_temporary_error(
+                "Task: {} Endpoint: {} Not yet created.".format(self.__class__.__name__, name))
+
+        if self.param.extra:
             endpoints_opr.update_scaled_endpoint_backend_service(
                 self.param.name, name, namespace, self.param.extra.ports, self.param.extra.backend_ip)
         else:

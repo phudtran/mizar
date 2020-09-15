@@ -40,7 +40,6 @@ class ArktosService(BuiltinsServiceServicer):
         param.body['status'] = {}
         param.body['metadata'] = {}
         param.body['status']['hostIP'] = request.host_ip
-        param.body['metadata']['name'] = request.name
         param.body['metadata']['namespace'] = request.namespace
         param.body['status']['phase'] = request.phase
         param.extra = {}
@@ -157,6 +156,9 @@ class ArktosService(BuiltinsServiceServicer):
             "Deleting servoce from Network Controller {}".format(request.name))
         param = HandlerParam()
         param.name = request.name
+        param.body['metadata'] = {}
+        param.body["metadata"]["namespace"] = request.namespace
+        param.extra = request.tenant
         return run_arktos_workflow(wffactory().k8sServiceDelete(param=param))
 
 
