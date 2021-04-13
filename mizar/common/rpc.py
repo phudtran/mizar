@@ -200,7 +200,7 @@ class TrnRpc:
         jsonconf = {
             "xdp_path": self.agent_xdp_path,
             "pcapfile": agent_pcap_file,
-            "xdp_flag": CONSTANTS.XDP_GENERIC
+            "xdp_flag": CONSTANTS.XDP_OFFLOAD
         }
         jsonconf = json.dumps(jsonconf)
         cmd = f'''{self.trn_cli_load_transit_agent_xdp} -i \'{itf}\' -j \'{jsonconf}\' '''

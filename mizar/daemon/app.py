@@ -52,7 +52,7 @@ def init():
     config = {
         "xdp_path": "/trn_xdp/trn_transit_xdp_ebpf_debug.o",
         "pcapfile": "/bpffs/transit_xdp.pcap",
-        "xdp_flag": CONSTANTS.XDP_GENERIC
+        "xdp_flag": CONSTANTS.XDP_OFFLOAD
         }
     config = json.dumps(config)
     cmd = (
