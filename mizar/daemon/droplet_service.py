@@ -46,7 +46,7 @@ class DropletServer(droplet_pb2_grpc.DropletServiceServicer):
 
 class DropletClient():
     def __init__(self, ip):
-        logger.info("IP HERE".format(ip)
+        logger.info("IP HERE {}".format(ip))
         self.channel = grpc.insecure_channel('{}:50051'.format(ip))
         self.stub = droplet_pb2_grpc.DropletServiceStub(self.channel)
 
