@@ -42,7 +42,7 @@ CFLAGS += -std=c11
 CFLAGS += -D_POSIX_C_SOURCE
 CFLAGS += -Wall
 CFLAGS += -Wextra
-CFLAGS += -Werror
+#CFLAGS += -Werror
 CFLAGS += -pedantic -Wpedantic
 CLFAGS += -Wno-cast-function-type -Wno-error=cast-function-type
 

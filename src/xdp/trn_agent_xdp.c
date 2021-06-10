@@ -54,7 +54,8 @@ int _agent(struct xdp_md *ctx)
 	pkt.data_end = (void *)(long)ctx->data_end;
 	pkt.xdp = ctx;
 	__u32 key = XDP_TRANSIT;
-	bpf_tail_call(pkt->xdp, &jmp_table, key);
+	bpf_tail_call(ctx, &jmp_table, key);
+	return XDP_DROP;
 }
 
 char _license[] SEC("license") = "GPL";

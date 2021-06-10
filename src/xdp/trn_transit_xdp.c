@@ -56,6 +56,7 @@ int _transit(struct xdp_md *ctx)
 	pkt.data_end = (void *)(long)ctx->data_end;
 	pkt.xdp = ctx;
 	bpf_debug("Tail call from agent!\n", __LINE__);
+	return XDP_DROP;
 }
 
 char _license[] SEC("license") = "GPL";

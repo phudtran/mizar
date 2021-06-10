@@ -276,56 +276,14 @@ struct rpc_trn_pod_and_namespace_label_policy_key_t {
 
 program RPC_TRANSIT_REMOTE_PROTOCOL {
         version RPC_TRANSIT_ALFAZERO {
-                int UPDATE_VPC(rpc_trn_vpc_t) = 1;
-                int UPDATE_NET(rpc_trn_network_t) = 2;
-                int UPDATE_EP(rpc_trn_endpoint_t) = 3;
-                int UPDATE_PORT(rpc_trn_port_t) = 4;
-                int UPDATE_AGENT_EP(rpc_trn_endpoint_t) = 5;
-                int UPDATE_AGENT_MD(rpc_trn_agent_metadata_t) = 6;
+               
 
-                int DELETE_VPC(rpc_trn_vpc_key_t) = 7;
-                int DELETE_NET(rpc_trn_network_key_t) = 8;
-                int DELETE_EP(rpc_trn_endpoint_key_t) = 9;
-                int DELETE_AGENT_EP(rpc_trn_endpoint_key_t) = 10;
-                int DELETE_AGENT_MD(rpc_intf_t) = 11;
+                int LOAD_TRANSIT_XDP(rpc_trn_xdp_intf_t) = 1;
+                int LOAD_TRANSIT_AGENT_XDP(rpc_trn_xdp_intf_t) = 2;
 
-                rpc_trn_vpc_t      GET_VPC(rpc_trn_vpc_key_t) = 12;
-                rpc_trn_network_t  GET_NET(rpc_trn_network_key_t) = 13;
-                rpc_trn_endpoint_t GET_EP(rpc_trn_endpoint_key_t) = 14;
-                rpc_trn_endpoint_t GET_AGENT_EP(rpc_trn_endpoint_key_t) = 15;
-                rpc_trn_agent_metadata_t GET_AGENT_MD(rpc_intf_t) = 16;
+                int UNLOAD_TRANSIT_XDP(rpc_intf_t) = 3;
+                int UNLOAD_TRANSIT_AGENT_XDP(rpc_intf_t) = 4;
 
-                int LOAD_TRANSIT_XDP(rpc_trn_xdp_intf_t) = 17;
-                int LOAD_TRANSIT_AGENT_XDP(rpc_trn_xdp_intf_t) = 18;
-
-                int UNLOAD_TRANSIT_XDP(rpc_intf_t) = 19;
-                int UNLOAD_TRANSIT_AGENT_XDP(rpc_intf_t) = 20;
-
-                int LOAD_TRANSIT_XDP_PIPELINE_STAGE(rpc_trn_ebpf_prog_t) = 21;
-                int UNLOAD_TRANSIT_XDP_PIPELINE_STAGE(rpc_trn_ebpf_prog_stage_t) = 22;
-
-                int UPDATE_TRANSIT_NETWORK_POLICY(rpc_trn_vsip_cidr_t) = 23;
-                int DELETE_TRANSIT_NETWORK_POLICY(rpc_trn_vsip_cidr_key_t) = 24;
-                int UPDATE_TRANSIT_NETWORK_POLICY_ENFORCEMENT(rpc_trn_vsip_enforce_t) = 25;
-                int DELETE_TRANSIT_NETWORK_POLICY_ENFORCEMENT(rpc_trn_vsip_enforce_t) = 26;
-                int UPDATE_TRANSIT_NETWORK_POLICY_PROTOCOL_PORT(rpc_trn_vsip_ppo_t) = 27;
-                int DELETE_TRANSIT_NETWORK_POLICY_PROTOCOL_PORT(rpc_trn_vsip_ppo_key_t) = 28;
-                int UPDATE_AGENT_NETWORK_POLICY(rpc_trn_vsip_cidr_t) = 29;
-                int DELETE_AGENT_NETWORK_POLICY(rpc_trn_vsip_cidr_key_t) = 30;
-                int UPDATE_AGENT_NETWORK_POLICY_ENFORCEMENT(rpc_trn_vsip_enforce_t) = 31;
-                int DELETE_AGENT_NETWORK_POLICY_ENFORCEMENT(rpc_trn_vsip_enforce_t) = 32;
-                int UPDATE_AGENT_NETWORK_POLICY_PROTOCOL_PORT(rpc_trn_vsip_ppo_t) = 33;
-                int DELETE_AGENT_NETWORK_POLICY_PROTOCOL_PORT(rpc_trn_vsip_ppo_key_t) = 34;
-
-                int UPDATE_PACKET_METADATA(rpc_trn_packet_metadata_t) = 35;
-                int DELETE_PACKET_METADATA(rpc_trn_packet_metadata_key_t) = 36;
-
-                int UPDATE_TRANSIT_POD_LABEL_POLICY(rpc_trn_pod_label_policy_t) = 37;
-                int DELETE_TRANSIT_POD_LABEL_POLICY(rpc_trn_pod_label_policy_key_t) = 38;
-                int UPDATE_TRANSIT_NAMESPACE_LABEL_POLICY(rpc_trn_namespace_label_policy_t) = 39;
-                int DELETE_TRANSIT_NAMESPACE_LABEL_POLICY(rpc_trn_namespace_label_policy_key_t) = 40;
-                int UPDATE_TRANSIT_POD_AND_NAMESPACE_LABEL_POLICY(rpc_trn_pod_and_namespace_label_policy_t) = 41;
-                int DELETE_TRANSIT_POD_AND_NAMESPACE_LABEL_POLICY(rpc_trn_pod_and_namespace_label_policy_key_t) = 42;
 
           } = 1;
 
