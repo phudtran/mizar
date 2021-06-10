@@ -26,7 +26,6 @@
 #include "extern/linux/err.h"
 #include "trn_agent_xdp_usr.h"
 #include "trn_log.h"
-#include "shared_map_names.h"
 
 #define _REUSE_MAP_IF_PINNED(map)                                        	\
 	do {									\
@@ -39,11 +38,6 @@
 			return 1;						\
 		}								\
 	} while (0)
-
-static int def_fwd_flow_mod_cache_map_fd = -1;
-static int def_rev_flow_mod_cache_map_fd = -1;
-static int def_ep_flow_host_cache_map_fd = -1;
-static int def_ep_host_cache_map_fd = -1;
 
 int trn_agent_user_metadata_free(struct agent_user_metadata_t *md)
 {
@@ -84,194 +78,6 @@ static int _trn_agent_update_inner_map_fd(const char *outer_map_name,
 		return 1;
 	}
 
-	return 0;
-}
-
-int trn_agent_update_agent_metadata(struct agent_user_metadata_t *umd,
-				    struct agent_metadata_t *md,
-				    struct user_metadata_t *eth_md)
-{
-	int key = 0;
-	int eth_idx = md->eth.iface_index;
-
-	umd->fwd_flow_mod_cache_map_fd = eth_md->fwd_flow_mod_cache_fd;
-	umd->rev_flow_mod_cache_map_fd = eth_md->rev_flow_mod_cache_fd;
-	umd->ep_flow_host_cache_map_fd = eth_md->ep_flow_host_cache_fd;
-	umd->ep_host_cache_map_fd = eth_md->ep_host_cache_fd;
-
-	int err = bpf_map_update_elem(umd->agentmetadata_map_fd, &key, md, 0);
-	if (err) {
-		TRN_LOG_ERROR("Configuring agent metadata (err:%d).", err);
-		return 1;
-	}
-
-	err = bpf_map_update_elem(umd->interfaces_map_fd, &key, &eth_idx, 0);
-
-	if (err) {
-		TRN_LOG_ERROR(
-			"Failed to update agent's interfaces map (err:%d).",
-			err);
-		return 1;
-	}
-
-	if (_trn_agent_update_inner_map_fd("fwd_flow_mod_cache_ref",
-					   umd->fwd_flow_mod_cache_ref_fd,
-					   umd->fwd_flow_mod_cache_map_fd))
-		return 1;
-
-	if (_trn_agent_update_inner_map_fd("rev_flow_mod_cache_ref",
-					   umd->rev_flow_mod_cache_ref_fd,
-					   umd->rev_flow_mod_cache_map_fd))
-		return 1;
-
-	if (_trn_agent_update_inner_map_fd("ep_flow_host_cache_ref",
-					   umd->ep_flow_host_cache_ref_fd,
-					   umd->ep_flow_host_cache_map_fd))
-		return 1;
-
-	if (_trn_agent_update_inner_map_fd("ep_host_cache_ref",
-					   umd->ep_host_cache_ref_fd,
-					   umd->ep_host_cache_map_fd))
-		return 1;
-
-	return 0;
-}
-
-int trn_agent_delete_agent_metadata(struct agent_user_metadata_t *umd)
-{
-	// We call update with a zeroed out struct
-	// This is becauses the agent metadata is stored as an array
-	struct agent_metadata_t md;
-	memset(&md, 0, sizeof(md));
-
-	int key = 0;
-	int eth_idx = md.eth.iface_index;
-
-	umd->fwd_flow_mod_cache_map_fd = def_fwd_flow_mod_cache_map_fd;
-	umd->rev_flow_mod_cache_map_fd = def_rev_flow_mod_cache_map_fd;
-	umd->ep_flow_host_cache_map_fd = def_ep_flow_host_cache_map_fd;
-	umd->ep_host_cache_map_fd = def_ep_host_cache_map_fd;
-
-	int err = bpf_map_update_elem(umd->agentmetadata_map_fd, &key, &md, 0);
-	if (err) {
-		TRN_LOG_ERROR("Configuring agent metadata (err:%d).", err);
-		return 1;
-	}
-
-	err = bpf_map_update_elem(umd->interfaces_map_fd, &key, &eth_idx, 0);
-
-	if (err) {
-		TRN_LOG_ERROR(
-			"Failed to update agent's interfaces map (err:%d).",
-			err);
-		return 1;
-	}
-
-	if (_trn_agent_update_inner_map_fd("fwd_flow_mod_cache_ref",
-					   umd->fwd_flow_mod_cache_ref_fd,
-					   umd->fwd_flow_mod_cache_map_fd))
-		return 1;
-
-	if (_trn_agent_update_inner_map_fd("rev_flow_mod_cache_ref",
-					   umd->rev_flow_mod_cache_ref_fd,
-					   umd->rev_flow_mod_cache_map_fd))
-		return 1;
-
-	if (_trn_agent_update_inner_map_fd("ep_flow_host_cache_ref",
-					   umd->ep_flow_host_cache_ref_fd,
-					   umd->ep_flow_host_cache_map_fd))
-		return 1;
-
-	if (_trn_agent_update_inner_map_fd("ep_host_cache_ref",
-					   umd->ep_host_cache_ref_fd,
-					   umd->ep_host_cache_map_fd))
-		return 1;
-
-	return 0;
-}
-
-int trn_agent_get_agent_metadata(struct agent_user_metadata_t *umd,
-				 struct agent_metadata_t *md)
-{
-	int key = 0;
-	int err = bpf_map_lookup_elem(umd->agentmetadata_map_fd, &key, md);
-	if (err) {
-		TRN_LOG_ERROR("Querying agent metadata (err:%d).", err);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_agent_add_prog(struct agent_user_metadata_t *umd, int prog, int prog_fd)
-{
-	int err = bpf_map_update_elem(umd->jmp_table_fd, &prog, &prog_fd, 0);
-	if (err) {
-		TRN_LOG_ERROR("Error add prog to agent jmp table (err:%d).",
-			      err);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_agent_update_endpoint(struct agent_user_metadata_t *umd,
-			      struct endpoint_key_t *epkey,
-			      struct endpoint_t *ep)
-{
-	int err = bpf_map_update_elem(umd->endpoints_map_fd, epkey, ep, 0);
-	if (err) {
-		TRN_LOG_ERROR("Store endpoint mapping failed (err:%d).", err);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_agent_get_endpoint(struct agent_user_metadata_t *umd,
-			   struct endpoint_key_t *epkey, struct endpoint_t *ep)
-{
-	int err = bpf_map_lookup_elem(umd->endpoints_map_fd, epkey, ep);
-	if (err) {
-		TRN_LOG_ERROR(
-			"Querying agent endpoint mapping failed (err:%d).",
-			err);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_agent_delete_endpoint(struct agent_user_metadata_t *umd,
-			      struct endpoint_key_t *epkey)
-{
-	int err = bpf_map_delete_elem(umd->endpoints_map_fd, epkey);
-	if (err) {
-		TRN_LOG_ERROR(
-			"Deleting agent endpoint mapping failed (err:%d).",
-			err);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_agent_update_packet_metadata(struct agent_user_metadata_t *umd,
-			      struct packet_metadata_key_t *key,
-			      struct packet_metadata_t *packet_metadata)
-{
-	int err = bpf_map_update_elem(umd->packet_metadata_map_fd, key, packet_metadata, 0);
-	if (err) {
-		TRN_LOG_ERROR("Store packet metadata mapping failed (err:%d).", err);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_agent_delete_packet_metadata(struct agent_user_metadata_t *umd,
-			      struct packet_metadata_key_t *key)
-{
-	int err = bpf_map_delete_elem(umd->packet_metadata_map_fd, key);
-	if (err) {
-		TRN_LOG_ERROR(
-			"Deleting packet metadata mapping failed (err:%d).", err);
-		return 1;
-	}
 	return 0;
 }
 
@@ -458,10 +264,6 @@ static int _trn_bpf_agent_prog_load_xattr(struct agent_user_metadata_t *md,
 	struct bpf_program *prog, *first_prog = NULL;
 	_trn_refresh_default_maps();
 
-	md->fwd_flow_mod_cache_map_fd = def_fwd_flow_mod_cache_map_fd;
-	md->rev_flow_mod_cache_map_fd = def_rev_flow_mod_cache_map_fd;
-	md->ep_flow_host_cache_map_fd = def_ep_flow_host_cache_map_fd;
-	md->ep_host_cache_map_fd = def_ep_host_cache_map_fd;
 
 	*pobj = bpf_object__open(attr->file);
 
@@ -469,54 +271,6 @@ static int _trn_bpf_agent_prog_load_xattr(struct agent_user_metadata_t *md,
 		TRN_LOG_ERROR("Error openning bpf file: %s\n", attr->file);
 		return 1;
 	}
-
-	if (_trn_agent_set_inner_map(*pobj, &md->fwd_flow_mod_cache_ref,
-				     "fwd_flow_mod_cache_ref",
-				     md->fwd_flow_mod_cache_map_fd)) {
-		md->fwd_flow_mod_cache_ref = NULL;
-		TRN_LOG_INFO("fwd_flow_mod_cache_ref inner fd is not set!\n");
-		goto error;
-	}
-
-	if (_trn_agent_set_inner_map(*pobj, &md->rev_flow_mod_cache_ref,
-				     "rev_flow_mod_cache_ref",
-				     md->rev_flow_mod_cache_map_fd)) {
-		md->rev_flow_mod_cache_ref = NULL;
-		TRN_LOG_INFO("rev_flow_mod_cache_ref inner fd is not set!\n");
-		goto error;
-	}
-
-	if (_trn_agent_set_inner_map(*pobj, &md->ep_flow_host_cache_ref,
-				     "ep_flow_host_cache_ref",
-				     md->ep_flow_host_cache_map_fd)) {
-		md->ep_flow_host_cache_ref = NULL;
-		TRN_LOG_INFO("ep_flow_host_cache_ref inner fd is not set!\n");
-		goto error;
-	}
-
-	if (_trn_agent_set_inner_map(*pobj, &md->ep_host_cache_ref,
-				     "ep_host_cache_ref",
-				     md->ep_host_cache_map_fd)) {
-		md->ep_flow_host_cache_ref = NULL;
-		TRN_LOG_INFO("ep_flow_host_cache_ref inner fd is not set!\n");
-		goto error;
-	}
-
-	// to share the pinned egress policy maps, if applicable
-	_REUSE_MAP_IF_PINNED(eg_vsip_enforce_map);
-	_REUSE_MAP_IF_PINNED(eg_vsip_prim_map);
-	_REUSE_MAP_IF_PINNED(eg_vsip_ppo_map);
-	_REUSE_MAP_IF_PINNED(eg_vsip_supp_map);
-	_REUSE_MAP_IF_PINNED(eg_vsip_except_map);
-	_REUSE_MAP_IF_PINNED(ing_vsip_enforce_map);
-	_REUSE_MAP_IF_PINNED(ing_vsip_prim_map);
-	_REUSE_MAP_IF_PINNED(ing_vsip_ppo_map);
-	_REUSE_MAP_IF_PINNED(ing_vsip_supp_map);
-	_REUSE_MAP_IF_PINNED(ing_vsip_except_map);
-	_REUSE_MAP_IF_PINNED(conn_track_cache);
-	_REUSE_MAP_IF_PINNED(ing_pod_label_policy_map);
-	_REUSE_MAP_IF_PINNED(ing_namespace_label_policy_map);
-	_REUSE_MAP_IF_PINNED(ing_pod_and_namespace_label_policy_map);	
 
 	/* Only one prog is supported */
 	bpf_object__for_each_program(prog, *pobj)
@@ -535,12 +289,6 @@ static int _trn_bpf_agent_prog_load_xattr(struct agent_user_metadata_t *md,
 	}
 
 	*prog_fd = bpf_program__fd(first_prog);
-
-	md->fwd_flow_mod_cache_ref_fd = bpf_map__fd(md->fwd_flow_mod_cache_ref);
-	md->rev_flow_mod_cache_ref_fd = bpf_map__fd(md->rev_flow_mod_cache_ref);
-	md->ep_flow_host_cache_ref_fd = bpf_map__fd(md->ep_flow_host_cache_ref);
-	md->ep_host_cache_ref_fd = bpf_map__fd(md->ep_host_cache_ref);
-
 	return 0;
 error:
 	TRN_LOG_ERROR("Error adding loading tranist agent from file %s.\n",
@@ -604,86 +352,5 @@ int trn_agent_metadata_init(struct agent_user_metadata_t *md, char *itf,
 	}
 	md->prog_id = md->info.id;
 
-	return 0;
-}
-
-int trn_update_agent_network_policy_map(int fd,
-					 struct vsip_cidr_t *ipcidr,
-					 __u64 bitmap)
-{
-	int err = bpf_map_update_elem(fd, ipcidr, &bitmap, 0);
-	if (err) {
-		TRN_LOG_ERROR("Store network policy egress CIDR map failed (err:%d) for ip address 0x%x wit remote cidr 0x%x / %d ",
-			err, ipcidr->local_ip, ipcidr->remote_ip, ipcidr->prefixlen);
-		return 1;
-	}
-	return 0;
-}
-
-int trn_delete_agent_network_policy_map(int fd,
-					 struct vsip_cidr_t *ipcidr)
-{
-	int err = bpf_map_delete_elem(fd, ipcidr);
-	if (err) {
-		TRN_LOG_ERROR("Delete network policy egress CIDR map failed (err:%d) for ip address 0x%x wit remote cidr 0x%x / %d ",
-			err, ipcidr->local_ip, ipcidr->remote_ip, ipcidr->prefixlen);
-		return 1;
-	}
-	return 0;
-}
-
-
-int trn_update_agent_network_policy_enforcement_map(struct agent_user_metadata_t *md,
-						      struct vsip_enforce_t *local,
-						      __u8 isenforce)
-{
-	int err = bpf_map_update_elem(md->eg_vsip_enforce_map_fd, local, &isenforce, 0);
-
-	if (err) {
-		TRN_LOG_ERROR("Update Enforcement egress map failed (err:%d) for ip address 0x%x. \n",
-				err, local->local_ip);
-		return 1;
-	}
-
-	return 0;
-}
-
-int trn_delete_agent_network_policy_enforcement_map(struct agent_user_metadata_t *md,
-						      struct vsip_enforce_t *local)
-{
-	int err = bpf_map_delete_elem(md->eg_vsip_enforce_map_fd, local);
-	if (err) {
-		TRN_LOG_ERROR("Delete Enforcement egress map failed (err:%d) for ip address 0x%x. ",
-				err, local->local_ip);
-		return 1;
-	}
-
-	return 0;
-}
-
-int trn_update_agent_network_policy_protocol_port_map(struct agent_user_metadata_t *md,
-						        struct vsip_ppo_t *policy,
-						        __u64 bitmap)
-{
-	int err = bpf_map_update_elem(md->eg_vsip_ppo_map_fd, policy, &bitmap, 0);
-
-	if (err) {
-		TRN_LOG_ERROR("Update Protocol-Port egress map failed (err:%d) for ip address 0x%x with protocol %d and port %d. \n",
-				err, policy->local_ip, policy->proto, policy->port);
-		return 1;
-	}
-
-	return 0;
-}
-
-int trn_delete_agent_network_policy_protocol_port_map(struct agent_user_metadata_t *md,
-						        struct vsip_ppo_t *policy)
-{
-	int err = bpf_map_delete_elem(md->eg_vsip_ppo_map_fd, policy);
-	if (err) {
-		TRN_LOG_ERROR("Delete Protocol-Port egress map failed (err:%d).for ip address 0x%x with protocol %d and port %d. \n",
-				err, policy->local_ip, policy->proto, policy->port);
-		return 1;
-	}
 	return 0;
 }
